@@ -287,6 +287,10 @@ public class SuicaLogViewActivity extends Activity {
         case RELOAD_CODE:
         	history.reLookupStation();
         	mDb.rewriteHisotry(mCardId);
+	        boolean flagAutobackup = PreferenceManager.getDefaultSharedPreferences(SuicaLogViewActivity.this).getBoolean("key_autobackup", false);
+	    	if (flagAutobackup) {
+	    		backupToExternalStorage(mCardId);
+	    	}
         	mSuicaLogAdapter.notifyDataSetChanged();
         	mListView.invalidateViews();
         	return true;
@@ -309,6 +313,10 @@ public class SuicaLogViewActivity extends Activity {
 				public void onClick(DialogInterface dialog, int which) {
 					history.note = editText.getText().toString();
 					mDb.rewriteHisotry(mCardId);
+			        boolean flagAutobackup = PreferenceManager.getDefaultSharedPreferences(SuicaLogViewActivity.this).getBoolean("key_autobackup", false);
+			    	if (flagAutobackup) {
+			    		backupToExternalStorage(mCardId);
+			    	}
 					//TODO backup should be done here
 					mSuicaLogAdapter.notifyDataSetChanged();
 		        	mListView.invalidateViews();
