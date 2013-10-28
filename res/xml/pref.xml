@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <PreferenceCategory android:title="バックアップ">
+        <CheckBoxPreference
+            android:key="key_autobackup"
+            android:title="自動的にバックアップを保存する"
+            android:summary="内部ストレージのsuicaloggerフォルダに自動的にバックアップ"
+        />
+        <CheckBoxPreference
+            android:key="key_show_help_howtoread"
+            android:title="起動時にhelpを表示する"
+            android:summary="交通系ICカードの読み方のhelpを起動時に表示します。"
+        />
+    </PreferenceCategory>
+    
+</PreferenceScreen>

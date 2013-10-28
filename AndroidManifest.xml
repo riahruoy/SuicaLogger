@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.fuyo.suicalogger"
+    android:versionCode="10"
+    android:versionName="1.8" >
+
+    <uses-sdk
+        android:minSdkVersion="11"
+        android:targetSdkVersion="14" />
+    <!-- NFCを使用する為のパーミッションを付与 -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <!-- マーケットで、NFC対応端末にのみ表示させる -->
+    <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name="com.fuyo.suicalogger.ICListActivity"
+            android:launchMode="singleTop"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.nfc.action.TECH_DISCOVERED" />
+                <category android:name="android.intent.category.FAULT" />
+            </intent-filter>
+            <meta-data
+             android:name="android.nfc.action.TECH_DISCOVERED"
+             android:resource="@xml/nfc_filter" />
+        </activity>
+        <activity 
+            android:name=".SuicaLogViewActivity"
+            android:launchMode="singleTop"
+            android:label="@string/app_name">
+            
+        </activity>
+        <activity 
+            android:name=".PrefActivity"
+            android:label="Settings">
+            
+        </activity>
+        <activity 
+            android:name=".HelpHowToReadNfcActivity"
+            android:theme="@style/Theme.MyTrans"
+            android:label="交通ICカードの読み方">
+            
+        </activity>
+        
+        <activity android:name="com.google.ads.AdActivity"
+              android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"/>
+        </application>
+
+</manifest>
