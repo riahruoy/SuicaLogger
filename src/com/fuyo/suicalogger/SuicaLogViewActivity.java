@@ -49,6 +49,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Color;
 import android.text.InputType;
 import android.util.Log;
@@ -143,6 +148,31 @@ public class SuicaLogViewActivity extends Activity {
         //show how to read ic card activity
         if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("key_show_help_howtoread", true)) {
         	showHelp();
+        }
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        int prevVersion = sharedPreferences.getInt("version", 1);
+        //StationCode.db is updated at versionCode = 10
+        if (prevVersion < 10) {
+            DBUtil util = new DBUtil(this);
+            try {
+				util.copyDataBase();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            util.close();
+            PackageManager packageManager = this.getPackageManager();
+            int versionCode = 1;
+            try {
+                   PackageInfo packageInfo = packageManager.getPackageInfo(this.getPackageName(), PackageManager.GET_ACTIVITIES);
+                   versionCode = packageInfo.versionCode;
+              } catch (NameNotFoundException e) {
+                   e.printStackTrace();
+              }
+                 Editor e = sharedPreferences.edit();
+            e.putInt("version", versionCode);
+            e.commit();
+            Toast.makeText(this, "データベースを更新しました", Toast.LENGTH_SHORT).show();
         }
     }
     @Override
@@ -246,6 +276,7 @@ public class SuicaLogViewActivity extends Activity {
       if (history.isProductSales()) {
     	  menu.add(0, END_CODE, 0, "メモの編集");
       }
+      menu.add(0, RELOAD_CODE, 0, "駅名をDBから検索して適用");
     }
     @Override
     public boolean onContextItemSelected(MenuItem item){
@@ -253,6 +284,12 @@ public class SuicaLogViewActivity extends Activity {
         History history = (History)mSuicaLogAdapter.getItem(info.position);
    
         switch(item.getItemId()){
+        case RELOAD_CODE:
+        	history.reLookupStation();
+        	mDb.rewriteHisotry(mCardId);
+        	mSuicaLogAdapter.notifyDataSetChanged();
+        	mListView.invalidateViews();
+        	return true;
       //削除
         case END_CODE:
         	final EditText editText = new EditText(this);
@@ -307,9 +344,9 @@ public class SuicaLogViewActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // メニューアイテムを追加します
-    	menu.add(Menu.NONE, Menu.FIRST, Menu.NONE, "設定");
+    	menu.add(Menu.NONE, MENU_ID_MENU1, Menu.NONE, "設定");
         
-//    	menu.add(Menu.NONE, Menu.FIRST, Menu.NONE, "サーバにアップロード");
+//    	menu.add(Menu.NONE, MENU_ID_MENU2, Menu.NONE, "データベース更新");
 //        menu.add(Menu.NONE, Menu.FIRST+1, Menu.NONE, "キャッシュ再構築");
         return super.onCreateOptionsMenu(menu);
     }
@@ -330,6 +367,17 @@ public class SuicaLogViewActivity extends Activity {
     		Intent intent = new Intent(this, PrefActivity.class);
     		startActivity(intent);
         	break;
+        case MENU_ID_MENU2:
+            DBUtil util = new DBUtil(this);
+            try {
+				util.copyDataBase();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            util.close();
+            break;
+
 /*
         case MENU_ID_MENU1:
         	upload_history();

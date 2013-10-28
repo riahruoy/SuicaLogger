@@ -106,8 +106,8 @@ public class Suica {
         final String processType;
         final long balance;
         final Date processDate;
-        final String[] entranceStation;
-        final String[] exitStation;
+        String[] entranceStation;
+        String[] exitStation;
         public String note;
         
         
@@ -132,6 +132,10 @@ public class Suica {
             this.balance = lookupBalance();
             this.historyNo = lookupHistoryNo();
             this.note = "";
+        }
+        public void reLookupStation() {
+        	this.entranceStation = lookupEntranceStation();
+        	this.exitStation = lookupExitStation();
         }
         public History(byte[] data, String consoleType,
         		String processType, Date processDate, String[] entranceStation,

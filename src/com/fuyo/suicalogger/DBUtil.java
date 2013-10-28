@@ -140,7 +140,7 @@ public class DBUtil extends SQLiteOpenHelper {
 	    }
         br.close();
     }
-    private void copyDataBase() throws IOException{
+    public void copyDataBase() throws IOException{
 
         //Open your local db as the input stream
         InputStream in = this.context.getAssets().open(DB_NAME);
