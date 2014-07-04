@@ -210,8 +210,10 @@ public class SuicaLogViewActivity extends Activity {
     	
     	try {
 			mDb.getICs().get(cardId).backupLogFile(filePath);
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED,
-            		Uri.parse("file://" + Environment.getExternalStorageDirectory()))); 
+			if(Build.VERSION.SDK_INT <= 18){
+				sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED,
+            		Uri.parse("file://" + Environment.getExternalStorageDirectory())));
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -614,12 +616,12 @@ public class SuicaLogViewActivity extends Activity {
 		      */
 		        if (history.isByBus()) {
 		        	noteText = "バス利用";
-		        	imageView.setImageResource(R.drawable.transparent);
+		        	imageView.setImageResource(R.drawable.bus);
 		        	String[] entrance = history.getEntranceStation();
 		        	noteText = entrance[0] + " " + entrance[1];
 		        } else if (history.isProductSales()){
 		        	noteText = history.note;
-		        	imageView.setImageResource(R.drawable.transparent);
+		        	imageView.setImageResource(R.drawable.shopping);
 		        } else {
 		        	if ((history.data[6] & 0xff) != 0x00
 		        			&& (history.data[7] & 0xff) != 0x00){

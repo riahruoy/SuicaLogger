@@ -22,6 +22,7 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.NfcF;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -215,8 +216,10 @@ public class ICListActivity extends ListActivity {
     	
     	try {
 			mDb.getICs().get(cardId).backupLogFile(filePath);
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED,
-            		Uri.parse("file://" + Environment.getExternalStorageDirectory()))); 
+			if(Build.VERSION.SDK_INT <= 18){
+				sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED,
+            		Uri.parse("file://" + Environment.getExternalStorageDirectory())));
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
