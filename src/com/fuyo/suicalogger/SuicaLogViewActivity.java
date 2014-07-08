@@ -65,9 +65,11 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -136,6 +138,20 @@ public class SuicaLogViewActivity extends Activity {
 //        		new int[] {android.R.id.text1, android.R.id.text2} );
         historyListView.setAdapter(mSuicaLogAdapter);
         registerForContextMenu(historyListView);
+
+        
+        Button searchButton = (Button)findViewById(R.id.searchButton);
+        searchButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(SuicaLogViewActivity.this, LogSearchActivity.class);
+				intent.putExtra("cardId", mCardId);
+				startActivity(intent);
+			}
+		});
+        
+        
+        
         
         adView = new AdView(this, AdSize.BANNER, MY_AD_UNIT_ID);
         LinearLayout layout = (LinearLayout)findViewById(R.id.mainLayout);

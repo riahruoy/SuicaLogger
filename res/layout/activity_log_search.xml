@@ -20,9 +20,11 @@
     <EditText
         android:id="@+id/searchEditText1"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:ems="10" />
+        android:layout_height="48dp"
+        android:inputType="text"
+        android:paddingLeft="5dp"
+        android:background="#DDDDDD"
+        android:hint="input keyword" />
     
 
 </LinearLayout>
