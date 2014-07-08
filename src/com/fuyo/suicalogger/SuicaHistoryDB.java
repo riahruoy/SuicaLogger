@@ -111,13 +111,30 @@ public class SuicaHistoryDB {
 		});
 
 		int writeCount = 0;
-		for (History history : histories) {
+		int lastBalance = 0;
+		Cursor c = null;
+		try {
+			c = db.query("history", new String[]{"balance"}, "card_id=?", new String[]{cardId}, null, null, "history_no desc", "1");
+			int indexBalance = c.getColumnIndex("balance");
+			while (c.moveToNext()) {
+				lastBalance = c.getInt(indexBalance);
+			}
+		} finally {
+			if (c != null) {
+				c.close();
+				c = null;
+			}
+		}
+		
+		for (int i = 0; i < histories.size(); i++) {
+			History history = histories.get(i);
 			String raw = Util.convertToString(history.data);
 			Cursor cursor = db.query("history", new String[]{"id"}, "raw=? and card_id=?", new String[]{raw, cardId}, null, null, null, "1");
 			int count = cursor.getCount();
 			cursor.close();
 			if (count == 0) {
 				//add
+				history.fee = (int) (lastBalance - history.balance);
 				ContentValues val = new ContentValues();
 				val.put("raw", Util.convertToString(history.data));
 				val.put("console_type", history.consoleType);
@@ -133,6 +150,7 @@ public class SuicaHistoryDB {
 				db.insert("history", null, val);
 				
 				writeCount++;
+				lastBalance = (int) history.balance;
 			}
 		}
 		return writeCount;

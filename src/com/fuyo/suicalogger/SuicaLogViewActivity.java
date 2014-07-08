@@ -83,6 +83,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 public class SuicaLogViewActivity extends Activity {
 	private static final int MENU_ID_MENU1 = Menu.FIRST;
 	private static final int MENU_ID_MENU2 = Menu.FIRST+1;
+	private static final int MENU_ID_MENU3 = Menu.FIRST+2;
 
 	private final static int END_CODE = 1;
 	private final static int RELOAD_CODE = 2;
@@ -392,7 +393,9 @@ public class SuicaLogViewActivity extends Activity {
 			}
             util.close();
             break;
-
+        case MENU_ID_MENU3:
+        	
+        	break;
 /*
         case MENU_ID_MENU1:
         	upload_history();
@@ -571,7 +574,8 @@ public class SuicaLogViewActivity extends Activity {
 					convertView = inflater.inflate(R.layout.row, null);
 				}
 				History history = (History)getItem(position);
-    			long use = getUse(position);
+//    			long use = getUse(position);
+				long use = history.fee;
 		        TextView textView1 = (TextView) convertView.findViewById(R.id.textView_price);
 		        TextView textView3 = (TextView) convertView.findViewById(R.id.textView_note);
 		        TextView textView4 = (TextView) convertView.findViewById(R.id.textView_balance);
