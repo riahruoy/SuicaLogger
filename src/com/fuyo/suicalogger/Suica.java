@@ -108,6 +108,7 @@ public class Suica {
         final Date processDate;
         String[] entranceStation;
         String[] exitStation;
+        int fee;
         public String note;
         
         
