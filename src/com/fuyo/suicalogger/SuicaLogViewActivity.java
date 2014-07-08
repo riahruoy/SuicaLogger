@@ -501,7 +501,7 @@ public class SuicaLogViewActivity extends Activity {
     			if (history == null) {
     				break;
     			}
-    			long tmp = getUse(i);
+    			int tmp = history.fee;
     			if (tmp > 0) {
     				use += tmp;
     			} else {
@@ -515,19 +515,6 @@ public class SuicaLogViewActivity extends Activity {
     		return result;
     	}
 
-    	private long getUse(int position) {
-			long use = 0;
-        	if (position + 1 < mDataSetWithSeparator.size()) {
-        		int nextPosition = position + 1;
-        		if (mDataSetWithSeparator.get(nextPosition) == null) {
-        			nextPosition++; //in case that next column is separator
-        		}
-        		use = mDataSetWithSeparator.get(nextPosition).getBalance() - mDataSetWithSeparator.get(position).getBalance();
-        	} else if (position + 1 == mDataSetWithSeparator.size()) {
-        		use = mDb.getCurrentData().get(mDb.getCurrentData().size()-1).getBalance() - mDataSetWithSeparator.get(position).getBalance();
-        	}
-        	return use;
-    	}
     	public SuicaLogAdapter() {
     		mDataSetWithSeparator = new ArrayList<History>();
     		notifyDataSetChanged();
