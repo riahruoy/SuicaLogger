@@ -54,6 +54,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
 import android.text.InputType;
@@ -83,6 +84,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 public class SuicaLogViewActivity extends Activity {
 	private static final int MENU_ID_MENU1 = Menu.FIRST;
 	private static final int MENU_ID_MENU2 = Menu.FIRST+1;
+	private static final int MENU_ID_MENU3 = Menu.FIRST+2;
 
 	private final static int END_CODE = 1;
 	private final static int RELOAD_CODE = 2;
@@ -362,6 +364,7 @@ public class SuicaLogViewActivity extends Activity {
     	menu.add(Menu.NONE, MENU_ID_MENU1, Menu.NONE, "設定");
         
 //    	menu.add(Menu.NONE, MENU_ID_MENU2, Menu.NONE, "データベース更新");
+    	menu.add(Menu.NONE, MENU_ID_MENU3, Menu.NONE, "recalc fee");
 //        menu.add(Menu.NONE, Menu.FIRST+1, Menu.NONE, "キャッシュ再構築");
         return super.onCreateOptionsMenu(menu);
     }
@@ -392,7 +395,18 @@ public class SuicaLogViewActivity extends Activity {
 			}
             util.close();
             break;
-
+        case MENU_ID_MENU3:
+        	//recalculate fee
+        	SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(this);
+        	SQLiteDatabase db = helper.getWritableDatabase();
+        	ArrayList<History> histories = mDb.getCurrentData();
+        	for (int i = 0; i < histories.size() - 1; i++) {
+        		History history = histories.get(i);
+        		history.fee = (int)(histories.get(i + 1).balance - history.balance);
+            	SuicaHistoryDB.updateHistory(db, mCardId, history);
+        	}
+        	db.close();
+        	break;
 /*
         case MENU_ID_MENU1:
         	upload_history();
@@ -487,7 +501,7 @@ public class SuicaLogViewActivity extends Activity {
     			if (history == null) {
     				break;
     			}
-    			long tmp = getUse(i);
+    			int tmp = history.fee;
     			if (tmp > 0) {
     				use += tmp;
     			} else {
@@ -501,19 +515,6 @@ public class SuicaLogViewActivity extends Activity {
     		return result;
     	}
 
-    	private long getUse(int position) {
-			long use = 0;
-        	if (position + 1 < mDataSetWithSeparator.size()) {
-        		int nextPosition = position + 1;
-        		if (mDataSetWithSeparator.get(nextPosition) == null) {
-        			nextPosition++; //in case that next column is separator
-        		}
-        		use = mDataSetWithSeparator.get(nextPosition).getBalance() - mDataSetWithSeparator.get(position).getBalance();
-        	} else if (position + 1 == mDataSetWithSeparator.size()) {
-        		use = mDb.getCurrentData().get(mDb.getCurrentData().size()-1).getBalance() - mDataSetWithSeparator.get(position).getBalance();
-        	}
-        	return use;
-    	}
     	public SuicaLogAdapter() {
     		mDataSetWithSeparator = new ArrayList<History>();
     		notifyDataSetChanged();
@@ -571,7 +572,8 @@ public class SuicaLogViewActivity extends Activity {
 					convertView = inflater.inflate(R.layout.row, null);
 				}
 				History history = (History)getItem(position);
-    			long use = getUse(position);
+//    			long use = getUse(position);
+				long use = history.fee;
 		        TextView textView1 = (TextView) convertView.findViewById(R.id.textView_price);
 		        TextView textView3 = (TextView) convertView.findViewById(R.id.textView_note);
 		        TextView textView4 = (TextView) convertView.findViewById(R.id.textView_balance);
