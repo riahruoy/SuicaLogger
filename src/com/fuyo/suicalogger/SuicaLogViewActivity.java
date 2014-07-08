@@ -54,6 +54,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
 import android.text.InputType;
@@ -363,6 +364,7 @@ public class SuicaLogViewActivity extends Activity {
     	menu.add(Menu.NONE, MENU_ID_MENU1, Menu.NONE, "設定");
         
 //    	menu.add(Menu.NONE, MENU_ID_MENU2, Menu.NONE, "データベース更新");
+    	menu.add(Menu.NONE, MENU_ID_MENU3, Menu.NONE, "recalc fee");
 //        menu.add(Menu.NONE, Menu.FIRST+1, Menu.NONE, "キャッシュ再構築");
         return super.onCreateOptionsMenu(menu);
     }
@@ -394,7 +396,16 @@ public class SuicaLogViewActivity extends Activity {
             util.close();
             break;
         case MENU_ID_MENU3:
-        	
+        	//recalculate fee
+        	SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(this);
+        	SQLiteDatabase db = helper.getWritableDatabase();
+        	ArrayList<History> histories = mDb.getCurrentData();
+        	for (int i = 0; i < histories.size() - 1; i++) {
+        		History history = histories.get(i);
+        		history.fee = (int)(histories.get(i + 1).balance - history.balance);
+            	SuicaHistoryDB.updateHistory(db, mCardId, history);
+        	}
+        	db.close();
         	break;
 /*
         case MENU_ID_MENU1:

@@ -155,6 +155,9 @@ public class SuicaHistoryDB {
 		}
 		return writeCount;
 	}
+	
+	
+	
 	public static String join(String[] tokens, char delimiter) {
 	    if (tokens == null) {
 	        return "";
