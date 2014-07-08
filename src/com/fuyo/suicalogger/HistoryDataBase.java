@@ -43,14 +43,21 @@ public class HistoryDataBase {
     	private CardHistoryFile mCurrentCardHistory;
     	private Map<String, CardHistoryFile>mDataMap;
     	private Context mContext;
+    	private SharedPreferences sharedPref;
     	public HistoryDataBase(Context context) {
     		mContext = context;
 			mDataMap = new HashMap<String, CardHistoryFile>();
+    		sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
 			reloadLogFile();
     	}
     	public void reloadLogFile() {
     		mDataMap = new HashMap<String, CardHistoryFile>();
-			ArrayList<String> idList = getCardIds();
+    		ArrayList<String> idList;
+    		if (!sharedPref.contains("prevVersionCode")) {
+    			idList = getIdsFromLogFile();
+    		} else {
+    			idList = getCardIds();
+    		}
 			mCurrentCardHistory = null;
 			for (String id : idList) {
 				CardHistoryFile hf = new CardHistoryFile(id);
@@ -299,21 +306,9 @@ public class HistoryDataBase {
         		return histories;
     		}
         	private ArrayList<History> readHistoryFromFile() {
-        		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
         		if (!sharedPref.contains("prevVersionCode")) {
         		//version <= 14 is file, version > 14 is sql
 	        		try {
-	            		PackageManager pm = mContext.getPackageManager();
-	                    int versionCode = 0;
-	                    try{
-	                        PackageInfo packageInfo = pm.getPackageInfo(mContext.getPackageName(), 0);
-	                        versionCode = packageInfo.versionCode;
-	                    }catch(NameNotFoundException e){
-	                        e.printStackTrace();
-	                    }
-	                    Editor e = sharedPref.edit();
-	                    e.putInt("prevVersionCode", versionCode);
-	                    e.commit();
 	                    
 	                    
 	            		BufferedReader br = null;
@@ -359,6 +354,18 @@ public class HistoryDataBase {
    	    		mContext.deleteFile(mFilename);
         	}
         	public int writeHistory(ArrayList<History> writeHistory) {
+        		PackageManager pm = mContext.getPackageManager();
+                int versionCode = 0;
+                try{
+                    PackageInfo packageInfo = pm.getPackageInfo(mContext.getPackageName(), 0);
+                    versionCode = packageInfo.versionCode;
+                }catch(NameNotFoundException e){
+                    e.printStackTrace();
+                }
+                Editor e = sharedPref.edit();
+                e.putInt("prevVersionCode", versionCode);
+                e.commit();
+
         		int writeCount = 0;
         		SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(mContext);
         		SQLiteDatabase db = helper.getWritableDatabase();

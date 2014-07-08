@@ -74,7 +74,8 @@ public class SuicaHistoryDB {
 		}
 		return histories;
 	}
-	public static int addHistory (SQLiteDatabase db, ArrayList<History> histories, String cardId) {
+	public static int addHistory (SQLiteDatabase db, ArrayList<History> _histories, String cardId) {
+		ArrayList<History> histories = new ArrayList<History>(_histories);
 		//if card is registered
 		Cursor cursorCard = db.query("card", new String[]{"id"}, "card_id=?",new String[]{cardId},null, null, null, "1");
 		boolean isRegistered = (cursorCard.getCount() > 0);
