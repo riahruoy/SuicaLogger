@@ -90,13 +90,7 @@ public class HistoryDataBase {
     		if (mCurrentCardHistory == null)return new ArrayList<History>();
     		return mCurrentCardHistory.getData();
     	}
-    	public int rewriteHisotry(String id){
-    		ArrayList<History> data = mDataMap.get(id).mData;
-    		mDataMap.get(id).mData = new ArrayList<History>();
-    		//writeHistory is differential writer, so mData should be empty in order to rewrite 
-    		return mDataMap.get(id).writeHistory(data);
-    	}
-    	public int writeHistory(ArrayList<History> data, String id) {
+     	public int writeHistory(ArrayList<History> data, String id) {
     		if (!mDataMap.containsKey(id)) {
     			CardHistoryFile hf = new CardHistoryFile(id);
     			mCurrentCardHistory = hf;

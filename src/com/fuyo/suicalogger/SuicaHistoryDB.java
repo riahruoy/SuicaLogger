@@ -32,6 +32,19 @@ public class SuicaHistoryDB {
 		}
 		return cardIds;
 	}
+	public static void updateHistory(SQLiteDatabase db, String cardId, History history) {
+		ContentValues val = new ContentValues();
+		val.put("console_type", history.consoleType);
+		val.put("process_type", history.processType);
+		val.put("process_date", (new SimpleDateFormat(DATE_PATTERN)).format(history.processDate));
+		val.put("entrance_station", join(history.entranceStation, ':'));
+		val.put("exit_station", join(history.exitStation, ':'));
+		val.put("balance", Long.toString(history.balance));
+		val.put("fee", history.fee);
+		val.put("history_no", history.historyNo);
+		val.put("note", history.note);
+		db.update("history", val, "card_id=? and raw=?", new String[]{cardId, Util.convertToString(history.data)});
+	}
 	public static ArrayList<History> readHistory(SQLiteDatabase db, Context context, String cardId) {
 		ArrayList<History> histories = new ArrayList<History>();
 		Cursor cursor = null;

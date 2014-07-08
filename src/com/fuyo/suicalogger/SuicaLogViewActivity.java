@@ -54,6 +54,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
 import android.text.InputType;
 import android.util.Log;
@@ -288,7 +289,9 @@ public class SuicaLogViewActivity extends Activity {
         switch(item.getItemId()){
         case RELOAD_CODE:
         	history.reLookupStation();
-        	mDb.rewriteHisotry(mCardId);
+			SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(SuicaLogViewActivity.this);
+			SuicaHistoryDB.updateHistory(helper.getWritableDatabase(), mCardId, history);
+			helper.close();
 	        boolean flagAutobackup = PreferenceManager.getDefaultSharedPreferences(SuicaLogViewActivity.this).getBoolean("key_autobackup", false);
 	    	if (flagAutobackup) {
 	    		backupToExternalStorage(mCardId);
@@ -314,7 +317,9 @@ public class SuicaLogViewActivity extends Activity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					history.note = editText.getText().toString();
-					mDb.rewriteHisotry(mCardId);
+					SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(SuicaLogViewActivity.this);
+					SuicaHistoryDB.updateHistory(helper.getWritableDatabase(), mCardId, history);
+					helper.close();
 			        boolean flagAutobackup = PreferenceManager.getDefaultSharedPreferences(SuicaLogViewActivity.this).getBoolean("key_autobackup", false);
 			    	if (flagAutobackup) {
 			    		backupToExternalStorage(mCardId);
