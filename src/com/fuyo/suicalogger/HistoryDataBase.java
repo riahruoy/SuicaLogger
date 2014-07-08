@@ -20,6 +20,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.preference.PreferenceManager;
 
 import com.fuyo.suicalogger.Suica.History;
 
@@ -42,7 +50,7 @@ public class HistoryDataBase {
     	}
     	public void reloadLogFile() {
     		mDataMap = new HashMap<String, CardHistoryFile>();
-			ArrayList<String> idList = getIdsFromLogFile();
+			ArrayList<String> idList = getCardIds();
 			mCurrentCardHistory = null;
 			for (String id : idList) {
 				CardHistoryFile hf = new CardHistoryFile(id);
@@ -53,6 +61,11 @@ public class HistoryDataBase {
     	}
     	public void setCurrentCard(String cardId) {
     		mCurrentCardHistory = mDataMap.get(cardId);
+    	}
+    	private ArrayList<String> getCardIds() {
+    		SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(mContext);
+    		SQLiteDatabase db = helper.getReadableDatabase();
+    		return SuicaHistoryDB.getCardIds(db);
     	}
     	private ArrayList<String> getIdsFromLogFile() {
     		ArrayList<String> list = new ArrayList<String>();
@@ -266,6 +279,9 @@ public class HistoryDataBase {
         			}
         			br.close();
         			fis.close();
+        			for (int i = 0; i < history.size() - 1; i++) {
+        				history.get(i).fee = (int)(history.get(i).balance - history.get(i + 1).balance);
+        			}
     			} catch (FileNotFoundException e) {
 
     			} catch (IOException e) {
@@ -275,46 +291,83 @@ public class HistoryDataBase {
         		return history;
     			
     		}
+    		private ArrayList<History> readHistoryFromSQL() {
+        		SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(mContext);
+        		SQLiteDatabase db = helper.getReadableDatabase();
+        		ArrayList<History> histories = SuicaHistoryDB.readHistory(db, mContext, mId);
+        		db.close();
+        		return histories;
+    		}
         	private ArrayList<History> readHistoryFromFile() {
-        		try {
-            		BufferedReader br = null;
-            		int version = 1;
-        			FileInputStream fis = mContext.openFileInput(mFilename);
-        			
-        			br = new BufferedReader(new InputStreamReader(fis));
-        			int readCount = 0;
-       				String line = br.readLine();
-       				if (readCount++ == 0) {
-       					if (line.startsWith(LOG_HEADER)) {
-       						//LOG_VERSION > 2
-       						String[] header = line.split("\t");
-       						version = Integer.parseInt(header[1]);
-       					}
-       				}
-        			br.close();
-        			fis.close();
-        			
-        			ArrayList<History> history = new ArrayList<History>();
-        			if (version == 1) {
-        				history = readHistoryFromFile_v1();
-        			} else if (version == 2) {
-        				history = readHistoryFromFile_v2();
-        			} else if (version == 3) { 
-        				history = readHistoryFromFile_v3();
-        			}
-        			return history;
-    			} catch (FileNotFoundException e) {
-    				return new ArrayList<History>();
-    			} catch (IOException e) {
-    				// TODO Auto-generated catch block
-    				e.printStackTrace();
-    				return new ArrayList<History>();
-    			}
+        		SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
+        		if (!sharedPref.contains("prevVersionCode")) {
+        		//version <= 14 is file, version > 14 is sql
+	        		try {
+	            		PackageManager pm = mContext.getPackageManager();
+	                    int versionCode = 0;
+	                    try{
+	                        PackageInfo packageInfo = pm.getPackageInfo(mContext.getPackageName(), 0);
+	                        versionCode = packageInfo.versionCode;
+	                    }catch(NameNotFoundException e){
+	                        e.printStackTrace();
+	                    }
+	                    Editor e = sharedPref.edit();
+	                    e.putInt("prevVersionCode", versionCode);
+	                    e.commit();
+	                    
+	                    
+	            		BufferedReader br = null;
+	            		int version = 1;
+	        			FileInputStream fis = mContext.openFileInput(mFilename);
+	        			
+	        			br = new BufferedReader(new InputStreamReader(fis));
+	        			int readCount = 0;
+	       				String line = br.readLine();
+	       				if (readCount++ == 0) {
+	       					if (line.startsWith(LOG_HEADER)) {
+	       						//LOG_VERSION > 2
+	       						String[] header = line.split("\t");
+	       						version = Integer.parseInt(header[1]);
+	       					}
+	       				}
+	        			br.close();
+	        			fis.close();
+	        			
+	        			ArrayList<History> history = new ArrayList<History>();
+	        			if (version == 1) {
+	        				history = readHistoryFromFile_v1();
+	        			} else if (version == 2) {
+	        				history = readHistoryFromFile_v2();
+	        			} else if (version == 3) { 
+	        				history = readHistoryFromFile_v3();
+	        			}
+	        			writeHistory(history);
+	        			return history;
+	    			} catch (FileNotFoundException e) {
+	    				return new ArrayList<History>();
+	    			} catch (IOException e) {
+	    				// TODO Auto-generated catch block
+	    				e.printStackTrace();
+	    				return new ArrayList<History>();
+	    			}
+                } else {
+                	//sqlite
+                	return readHistoryFromSQL();
+                }
         	}
         	public void deleteHistory() {
    	    		mContext.deleteFile(mFilename);
         	}
         	public int writeHistory(ArrayList<History> writeHistory) {
+        		int writeCount = 0;
+        		SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(mContext);
+        		SQLiteDatabase db = helper.getWritableDatabase();
+        		writeCount = SuicaHistoryDB.addHistory(db, writeHistory, mId);
+        		db.close();
+        		mData = SuicaHistoryDB.readHistory(helper.getReadableDatabase(), mContext, mId);
+        		return writeCount;
+        	}
+        	private int writeHistory_v3(ArrayList<History> writeHistory) {
         		ArrayList<History> historyToBeAdded = new ArrayList<History>(); 
         		for (History singleWriteLog : writeHistory) {
         			boolean found = false;
@@ -388,28 +441,43 @@ public class HistoryDataBase {
         		return mData;
         	}
         	public void backupLogFile(String dstFilePath) throws IOException {
-        		String srcFilePath = mFilename;
-        		File srcFile = new File(srcFilePath);
 	      		File dstFile = new File(dstFilePath);
-	      		 
 	      		  // ディレクトリを作る.
 	      		dstFile.getParentFile().mkdirs();
+				FileOutputStream fos =  new FileOutputStream(dstFilePath);
+				BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+/*    		        public History(byte[] data, String consoleType,
+		        		String processType, Date processDate, String[] entranceStation,
+		        		String[] exitStation, long balance, int historyNo) {
+*/
+				bw.write("# LOG BACKUP");
+				bw.write("\n");
+				
+				for (History singleWriteLog : mData) {
+					String[] writeLine = new String[] {
+						Util.convertToString(singleWriteLog.data),
+						singleWriteLog.consoleType,
+						singleWriteLog.processType,
+						(new SimpleDateFormat(DATE_PATTERN)).format(singleWriteLog.processDate),
+						join(singleWriteLog.entranceStation, ':'),
+						join(singleWriteLog.exitStation, ':'),
+						Long.toString(singleWriteLog.balance),
+						Integer.toString(singleWriteLog.historyNo),
+						singleWriteLog.note,
+						Integer.toString(singleWriteLog.fee)
+					};
+					for (int i = 0; i < writeLine.length ; i++) {
+						writeLine[i] = "\"" + writeLine[i] + "\"";
+					}
+					bw.write(join(writeLine,'\t'));
+					bw.write("\n");
+				}
+				bw.close();
+				fos.close();
+
 	      		 
-	      		  // ファイルコピーのフェーズ
-	      		InputStream input = null;
-	      		OutputStream output = null;
-	      		input = mContext.openFileInput(mFilename);
-	      		output = new FileOutputStream(dstFile, false);
 	      		 
-	      		int DEFAULT_BUFFER_SIZE = 1024 * 4;
-	      		byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-	      		int n = 0;
-	      		while (-1 != (n = input.read(buffer))) {
-	      			output.write(buffer, 0, n);
-	      		}
-	      		input.close();
-	      		output.close();
-      		}
+        	}
     	}
     	public static String join(String[] tokens, char delimiter) {
     	    if (tokens == null) {

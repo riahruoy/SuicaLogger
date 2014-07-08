@@ -133,6 +133,7 @@ public class Suica {
             this.balance = lookupBalance();
             this.historyNo = lookupHistoryNo();
             this.note = "";
+            this.fee = 0;
         }
         public void reLookupStation() {
         	this.entranceStation = lookupEntranceStation();
@@ -151,7 +152,7 @@ public class Suica {
         	this.historyNo = historyNo;
         	this.note = note;
         	this.context = context;
-        	
+        	this.fee = 0;
         	//TODO overWrite処理
         	
         }

@@ -14,13 +14,29 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-public class SuicaHisotryDB {
+public class SuicaHistoryDB {
 	static public final String DATE_PATTERN ="yyyy-MM-dd'T'HH:mm:ss";
-	public static ArrayList<History> readHistory(SQLiteDatabase db, Context context) {
+	public static ArrayList<String> getCardIds(SQLiteDatabase db) {
+		ArrayList<String> cardIds = new ArrayList<String>();
+		Cursor cursor = null;
+		try {
+			cursor = db.query("card", null, null, null, null, null, "id desc");
+			int indexCardId = cursor.getColumnIndex("card_id");
+			while (cursor.moveToNext()) {
+				cardIds.add(cursor.getString(indexCardId));
+			}
+		} finally {
+			if (cursor != null) {
+				cursor.close();
+			}
+		}
+		return cardIds;
+	}
+	public static ArrayList<History> readHistory(SQLiteDatabase db, Context context, String cardId) {
 		ArrayList<History> histories = new ArrayList<History>();
 		Cursor cursor = null;
 		try {
-			cursor = db.query("history",null, null, null, null, null, null, null);
+			cursor = db.query("history",null, "card_id=?", new String[]{ cardId }, null, null, "history_no DESC", null);
 			int indexRaw = cursor.getColumnIndex("raw");
 			int indexConsoleType = cursor.getColumnIndex("console_type");
 			int indexProcessType = cursor.getColumnIndex("process_type");
@@ -58,7 +74,20 @@ public class SuicaHisotryDB {
 		}
 		return histories;
 	}
-	public static int addHistory (SQLiteDatabase db, ArrayList<History> histories) {
+	public static int addHistory (SQLiteDatabase db, ArrayList<History> histories, String cardId) {
+		//if card is registered
+		Cursor cursorCard = db.query("card", new String[]{"id"}, "card_id=?",new String[]{cardId},null, null, null, "1");
+		boolean isRegistered = (cursorCard.getCount() > 0);
+		cursorCard.close();
+		if (!isRegistered) {
+			ContentValues val = new ContentValues();
+			val.put("card_id", cardId);
+			val.put("name", cardId);
+			db.insert("card",null, val);
+		}
+		
+		
+		
 		//sort by historyNo ASC
 		Collections.sort(histories, new Comparator<History>(){
 			@Override
@@ -69,7 +98,8 @@ public class SuicaHisotryDB {
 
 		int writeCount = 0;
 		for (History history : histories) {
-			Cursor cursor = db.query("history", new String[]{"id"}, "raw=?", new String[]{""}, null, null, null, "1");
+			String raw = Util.convertToString(history.data);
+			Cursor cursor = db.query("history", new String[]{"id"}, "raw=? and card_id=?", new String[]{raw, cardId}, null, null, null, "1");
 			int count = cursor.getCount();
 			cursor.close();
 			if (count == 0) {
@@ -85,7 +115,9 @@ public class SuicaHisotryDB {
 				val.put("fee", history.fee);
 				val.put("history_no", history.historyNo);
 				val.put("note", history.note);
+				val.put("card_id", cardId);
 				db.insert("history", null, val);
+				
 				writeCount++;
 			}
 		}
@@ -104,12 +136,13 @@ public class SuicaHisotryDB {
 	    }
 	    return ret.toString();
 	}
-	private static class OpenHelper extends SQLiteOpenHelper {
+	public static class OpenHelper extends SQLiteOpenHelper {
 		static final String DB = "history_sqlite";
-		static final int DB_VERSION = 1;
-		static final String CREATE_TABLE_CARD = "create table card ( id integer primary key autoincrement, name varchar(128))";
+		static final int DB_VERSION = 2;
+		static final String CREATE_TABLE_CARD = "create table card ( id integer primary key autoincrement,card_id varchar(32) not null, name varchar(128))";
 		static final String CREATE_TABLE_RECORD = "create table history"
 				+"( id integer primary key autoincrement,"
+				+ "card_id varchar(32),"
 				+ "raw varchar(32),"
 				+ "console_type varchar(32),"
 				+ "process_type varchar(32),"
@@ -128,6 +161,8 @@ public class SuicaHisotryDB {
 	    public void onCreate(SQLiteDatabase db) {
 	        db.execSQL(CREATE_TABLE_CARD);
 	        db.execSQL(CREATE_TABLE_RECORD);
+	        db.execSQL("create unique index rawindex on history(raw);");
+	        db.execSQL("create index cardindex on history(card_id);");
 	    }
 	    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 	        db.execSQL(DROP_TABLE_CARD);
