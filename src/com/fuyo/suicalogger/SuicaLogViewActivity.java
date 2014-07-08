@@ -136,8 +136,8 @@ public class SuicaLogViewActivity extends Activity {
         registerForContextMenu(historyListView);
         
         adView = new AdView(this, AdSize.BANNER, MY_AD_UNIT_ID);
-        FrameLayout layout = (FrameLayout)findViewById(R.id.mainLayout);
-        FrameLayout.LayoutParams param1 = new FrameLayout.LayoutParams(
+        LinearLayout layout = (LinearLayout)findViewById(R.id.mainLayout);
+        LinearLayout.LayoutParams param1 = new LinearLayout.LayoutParams(
         		TableLayout.LayoutParams.MATCH_PARENT,
         		TableLayout.LayoutParams.WRAP_CONTENT);
         param1.gravity = Gravity.BOTTOM;
