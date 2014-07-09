@@ -12,6 +12,11 @@
             android:title="起動時にhelpを表示する"
             android:summary="交通系ICカードの読み方のhelpを起動時に表示します。"
         />
+        <CheckBoxPreference
+            android:key="key_contribute"
+            android:title="Suicaデータ解析に貢献する"
+            android:summary="メモに手動で入力した場合にメモ内容とSuica決済店舗のIDが送信されます。これにより将来的には決済店舗を自動で表示する機能がつけれればよいと思っています。" 
+        />
     </PreferenceCategory>
     
 </PreferenceScreen>

@@ -106,12 +106,15 @@ public class SuicaLogViewActivity extends Activity {
 //	private SimpleAdapter mSimpleAdapter;
 	String[][] mTechLists;
 	private HistoryDataBase mDb;
+	private SharedPreferences sharedPref;
 	private AdView adView;
 	static final String MY_AD_UNIT_ID = "a151adc8d9b0c47";
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        whatsNewDialogInit();
 		Locale.setDefault(Locale.JAPAN);	//for currency JPY
         setContentView(R.layout.activity_suica_history_view);
         getActionBar().setDisplayHomeAsUpEnabled(true);
@@ -222,6 +225,25 @@ public class SuicaLogViewActivity extends Activity {
     private void showHelp() {
 		Intent intent = new Intent(this, HelpHowToReadNfcActivity.class);
 		startActivity(intent);
+    }
+    private void whatsNewDialogInit() {
+    	final String KEY_VERSION = "whatsnew_version";
+    	int currentVersionNumber = 0;
+    	int savedVersionNumber = sharedPref.getInt(KEY_VERSION, 0);
+    	try {
+    		PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+    		currentVersionNumber = pi.versionCode;
+    	} catch (Exception e) {
+    	}
+    	if (currentVersionNumber > savedVersionNumber) {
+    		Editor editor = sharedPref.edit();
+    		editor.putInt(KEY_VERSION, currentVersionNumber);
+    		editor.commit();
+    		
+    		//show dialog
+    		
+    	}
+    	
     }
     
     private void backupToExternalStorage(String cardId) {
@@ -371,9 +393,13 @@ public class SuicaLogViewActivity extends Activity {
 					SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(SuicaLogViewActivity.this);
 					SuicaHistoryDB.updateHistory(helper.getWritableDatabase(), mCardId, history);
 					helper.close();
-			        boolean flagAutobackup = PreferenceManager.getDefaultSharedPreferences(SuicaLogViewActivity.this).getBoolean("key_autobackup", false);
+			        boolean flagAutobackup = sharedPref.getBoolean("key_autobackup", false);
+			        boolean flagContribute = sharedPref.getBoolean("key_contribute", false);
 			    	if (flagAutobackup) {
 			    		backupToExternalStorage(mCardId);
+			    	}
+			    	if (flagContribute) {
+			    		upload_history(mCardId, Util.convertToString(history.data), history.note);
 			    	}
 					//TODO backup should be done here
 					mSuicaLogAdapter.notifyDataSetChanged();
@@ -497,52 +523,12 @@ public class SuicaLogViewActivity extends Activity {
     	return result;
     }
     
-    private void upload_history() {
-    	   // 非同期タスクを定義
-        HttpPostTask task = new HttpPostTask(
-          this,
-          "https://iijuf.net/suicalog/upload.php",
-
-          // タスク完了時に呼ばれるUIのハンドラ
-          new HttpPostHandler(){
-
-            @Override
-            public void onPostCompleted(String response) {
-              // 受信結果をUIに表示
-              Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onPostFailed(String response) {
-//              Toast.makeText(getApplicationContext(), response, Toast.LENGTH_LONG).show();
-              Toast.makeText(
-                getApplicationContext(), 
-                "エラーが発生しました。", 
-                Toast.LENGTH_LONG
-              ).show();
-            }
-          }
-        );
-    	for (int i = 0; i < mDb.getCurrentData().size(); i++) {
-    		History singleWriteLog = mDb.getCurrentData().get(i);
-			String[] writeLine = new String[] {
-					Util.convertToString(singleWriteLog.data),
-					singleWriteLog.consoleType,
-					singleWriteLog.processType,
-					(new SimpleDateFormat(HistoryDataBase.DATE_PATTERN)).format(singleWriteLog.processDate),
-					HistoryDataBase.join(singleWriteLog.entranceStation, ':'),
-					HistoryDataBase.join(singleWriteLog.exitStation, ':'),
-					Long.toString(singleWriteLog.balance),
-					Integer.toString(singleWriteLog.historyNo)
-				};
-			String data = HistoryDataBase.join(writeLine,'\t');
-	        task.addPostParam( "data"+i, data  );
-
-    	}
-        task.addPostParam( "card_id", mCardId );
-
-        // タスクを開始
-        task.execute();
+    private void upload_history(String cardId, String raw, String note) {
+	    Intent intent = new Intent(this, LogUploader.class);
+	    intent.putExtra("url", "http://iijuf.net/suicalogger/upload_note.php");
+	    intent.putExtra("paramKeys", new String[]{"cardId", "raw", "note"});
+	    intent.putExtra("paramValues", new String[] {cardId, raw, note});
+	    this.startService(intent);
 
     }
 
