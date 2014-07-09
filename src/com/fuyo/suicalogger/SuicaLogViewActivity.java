@@ -227,23 +227,33 @@ public class SuicaLogViewActivity extends Activity {
 		startActivity(intent);
     }
     private void whatsNewDialogInit() {
-    	final String KEY_VERSION = "whatsnew_version";
-    	int currentVersionNumber = 0;
-    	int savedVersionNumber = sharedPref.getInt(KEY_VERSION, 0);
-    	try {
-    		PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
-    		currentVersionNumber = pi.versionCode;
-    	} catch (Exception e) {
+    	if (!sharedPref.contains("key_contribute")) {
+    		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    		builder.setTitle("データ解析のご協力")
+    		.setMessage("Suicaのデータ解析にご協力をお願いします。\n"
+    				+ "個人を特定するデータは送信されません。\n"
+    				+ "メモに手動で入力した場合にメモ内容とSuica決済店舗のIDが送信されます。\n"
+    				+ "ちなみにメモは、物販の項目を長押しで付けれます\n"
+   				+ "将来的には決済店舗を自動で表示する機能がつけれればよいと思っています。")
+    		.setPositiveButton("協力する(^o^)", new DialogInterface.OnClickListener() {
+				
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Editor e = sharedPref.edit();
+					e.putBoolean("key_contribute", true);
+					e.commit();
+				}
+			})
+			.setNegativeButton("やめておく(TдT)", new DialogInterface.OnClickListener() {
+			
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Editor e = sharedPref.edit();
+					e.putBoolean("key_contribute", false);
+					e.commit();
+				}
+			}).create().show();
     	}
-    	if (currentVersionNumber > savedVersionNumber) {
-    		Editor editor = sharedPref.edit();
-    		editor.putInt(KEY_VERSION, currentVersionNumber);
-    		editor.commit();
-    		
-    		//show dialog
-    		
-    	}
-    	
     }
     
     private void backupToExternalStorage(String cardId) {
