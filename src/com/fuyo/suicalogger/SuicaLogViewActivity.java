@@ -26,6 +26,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import com.fuyo.suicalogger.Suica.History;
+import com.fuyo.suicalogger.SuicaHistoryDB.OpenHelper;
 import com.google.ads.AdRequest;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
@@ -54,10 +55,13 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Gravity;
@@ -66,8 +70,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -319,10 +326,25 @@ public class SuicaLogViewActivity extends Activity {
         	return true;
       //削除
         case END_CODE:
-        	final EditText editText = new EditText(this);
+//        	final EditText editText = new EditText(this);
+        	final AutoCompleteTextView editText = new AutoCompleteTextView(this);
         	editText.setText(history.note);
         	editText.setMaxLines(1);
         	editText.setInputType(InputType.TYPE_CLASS_TEXT);
+        	final ArrayList<String> candidates = getNoteSuggestion(history);
+        	ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+        			android.R.layout.simple_list_item_1,
+        			candidates);
+        	editText.setAdapter(adapter);
+        	editText.setThreshold(1);
+        	editText.setOnFocusChangeListener(new OnFocusChangeListener() {
+				@Override
+				public void onFocusChange(View v, boolean hasFocus) {
+					if (candidates.size() > 0) {
+						editText.showDropDown();
+					}
+				}
+			});
         	AlertDialog.Builder builder = new AlertDialog.Builder(this);
         	builder.setTitle("メモの編集");
         	builder.setView(editText);
@@ -440,6 +462,30 @@ public class SuicaLogViewActivity extends Activity {
         }
         return ret;
     }
+    
+    private ArrayList<String> getNoteSuggestion(History history) {
+    	ArrayList<String> result = new ArrayList<String>();
+    	String rawString = Util.getHexString(history.data);
+    	SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(this);
+    	SQLiteDatabase db = helper.getReadableDatabase();
+    	Cursor cursor = null;
+    	try {
+    		cursor = db.query("history", new String[]{"note"}, "raw like ?",
+    				new String[]{rawString.substring(0,2)+"______________"+rawString.substring(16,20)+"%"}, null, null, "history_no desc");
+    		int indexNote = cursor.getColumnIndex("note");
+    		while (cursor.moveToNext()) {
+    			String str = cursor.getString(indexNote);
+    			if (str.length() > 0) {
+    				result.add(str);
+    			}
+       		}
+    	} finally {
+    		cursor.close();
+    	}
+    	db.close();
+    	return result;
+    }
+    
     private void upload_history() {
     	   // 非同期タスクを定義
         HttpPostTask task = new HttpPostTask(
