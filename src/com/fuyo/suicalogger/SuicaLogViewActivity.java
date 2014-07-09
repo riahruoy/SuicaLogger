@@ -380,7 +380,7 @@ public class SuicaLogViewActivity extends Activity {
     	menu.add(Menu.NONE, MENU_ID_MENU1, Menu.NONE, "設定");
         
 //    	menu.add(Menu.NONE, MENU_ID_MENU2, Menu.NONE, "データベース更新");
-    	menu.add(Menu.NONE, MENU_ID_MENU3, Menu.NONE, "recalc fee");
+//    	menu.add(Menu.NONE, MENU_ID_MENU3, Menu.NONE, "recalc fee");
 //        menu.add(Menu.NONE, Menu.FIRST+1, Menu.NONE, "キャッシュ再構築");
         return super.onCreateOptionsMenu(menu);
     }
