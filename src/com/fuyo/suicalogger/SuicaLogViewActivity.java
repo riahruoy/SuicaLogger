@@ -327,6 +327,13 @@ public class SuicaLogViewActivity extends Activity {
       //削除
         case END_CODE:
 //        	final EditText editText = new EditText(this);
+        	final TextView textView = new TextView(this);
+        	textView.setGravity(Gravity.CENTER_HORIZONTAL);
+        	String rawString = Util.convertToString(history.data);
+        	textView.setText("端末ID: " + rawString.substring(16, 20));
+        	LinearLayout llayout = new LinearLayout(this);
+        	llayout.setOrientation(LinearLayout.VERTICAL);
+
         	final AutoCompleteTextView editText = new AutoCompleteTextView(this);
         	editText.setText(history.note);
         	editText.setMaxLines(1);
@@ -345,9 +352,13 @@ public class SuicaLogViewActivity extends Activity {
 					}
 				}
 			});
+        	
+        	llayout.addView(textView);
+        	llayout.addView(editText);
         	AlertDialog.Builder builder = new AlertDialog.Builder(this);
         	builder.setTitle("メモの編集");
-        	builder.setView(editText);
+
+        	builder.setView(llayout);
         	DialogInterface.OnClickListener doc = new DialogInterface.OnClickListener() {
 				private History history;
 				public DialogInterface.OnClickListener setParam(History h) {
