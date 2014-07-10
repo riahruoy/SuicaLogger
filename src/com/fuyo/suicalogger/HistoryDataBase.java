@@ -30,6 +30,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.preference.PreferenceManager;
 
 import com.fuyo.suicalogger.Suica.History;
+import com.fuyo.suicalogger.SuicaHistoryDB.OpenHelper;
 
 public class HistoryDataBase {
     	static public final String DATE_PATTERN ="yyyy-MM-dd'T'HH:mm:ss";
@@ -345,7 +346,11 @@ public class HistoryDataBase {
                 }
         	}
         	public void deleteHistory() {
-   	    		mContext.deleteFile(mFilename);
+        		SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(mContext);
+        		SQLiteDatabase db = helper.getWritableDatabase();
+        		db.delete("history", "card_id=?", new String[]{mId});
+        		db.delete("card", "card_id=?", new String[]{mId});
+        		
         	}
         	public int writeHistory(ArrayList<History> writeHistory) {
         		PackageManager pm = mContext.getPackageManager();
