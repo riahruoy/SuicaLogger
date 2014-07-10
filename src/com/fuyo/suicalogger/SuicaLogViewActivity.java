@@ -336,7 +336,7 @@ public class SuicaLogViewActivity extends Activity {
       if (history.isProductSales()) {
     	  menu.add(0, END_CODE, 0, "メモの編集");
       }
-      menu.add(0, RELOAD_CODE, 0, "駅名をDBから検索して適用");
+//      menu.add(0, RELOAD_CODE, 0, "駅名をDBから検索して適用");
     }
     @Override
     public boolean onContextItemSelected(MenuItem item){

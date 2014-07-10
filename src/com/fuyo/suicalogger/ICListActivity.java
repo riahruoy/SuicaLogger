@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fuyo.suicalogger.Suica.History;
+import com.fuyo.suicalogger.SuicaHistoryDB.OpenHelper;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ListActivity;
@@ -15,8 +18,12 @@ import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
@@ -34,6 +41,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
@@ -43,6 +51,7 @@ public class ICListActivity extends ListActivity {
 	private PendingIntent mPendingIntent;
 	private IntentFilter[] mFilters;
 	private final static int END_CODE = 1;
+	private final static int MODIFY_CODE = 2;
 	String[][] mTechLists;
 	private ListView mListView;
 	private List<Map<String, String>> mListDataSet;
@@ -63,7 +72,6 @@ public class ICListActivity extends ListActivity {
         mListView = this.getListView();
         mListDataSet = new ArrayList<Map<String, String>>();
     	mDb = new HistoryDataBase(this);
-    	setListDataSet();
         mSimpleAdapter = new SimpleAdapter(
         		this,
         		mListDataSet,
@@ -116,7 +124,9 @@ public class ICListActivity extends ListActivity {
 	        		
 	        	}
 	        }
-        }        
+        }
+    	setListDataSet();
+
     }
 	private void createIntent(String cardId) {
 		Intent intent = new Intent(ICListActivity.this, SuicaLogViewActivity.class);
@@ -135,14 +145,22 @@ public class ICListActivity extends ListActivity {
         mListDataSet.clear();
         mDb.reloadLogFile();
         Map<String, HistoryDataBase.CardHistoryFile> ICs = mDb.getICs();
+        SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(this);
+        SQLiteDatabase db = helper.getReadableDatabase();
         int i = 0;
         for (Map.Entry<String, HistoryDataBase.CardHistoryFile> entry : ICs.entrySet()) {
+        	Cursor c = db.query("card", new String[]{"name"}, "card_id like ?", new String[]{entry.getKey()}, null, null, null, "1");
+        	int indexName = c.getColumnIndex("name");
+        	c.moveToFirst();
+        	String name = c.getString(indexName);
+        	c.close();
         	i++;
 			Map<String, String> singleHistory = new HashMap<String, String>();
-       		singleHistory.put("comment", entry.getKey() + " " + "Last sync: " + mDb.getICs().get(entry.getKey()).getLastWrite());
-			singleHistory.put("title", "ICカード " + i);
+       		singleHistory.put("comment", entry.getKey());
+			singleHistory.put("title", name);
 			mListDataSet.add(singleHistory);
 		}
+        mSimpleAdapter.notifyDataSetChanged();
 
     }
     
@@ -198,6 +216,7 @@ public class ICListActivity extends ListActivity {
 	    	    	mListView.invalidateViews();
 				    dialog.dismiss();
 	    			Toast.makeText(ICListActivity.this, "履歴を" + String.valueOf(result)+"件追加しました", Toast.LENGTH_SHORT).show();
+	    			setListDataSet();
 	    			ICListActivity.this.createIntent(cardId);
 				}
     		};
@@ -234,16 +253,28 @@ public class ICListActivity extends ListActivity {
  
       menu.setHeaderTitle(((Map<String, String>)listView.getItemAtPosition(adapterinfo.position)).get("title"));
       menu.add(0, END_CODE, 0, "削除");
+      menu.add(0, MODIFY_CODE, 1, "名称を編集");
     }
     @Override
     public boolean onContextItemSelected(MenuItem item){
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)item.getMenuInfo();
-   
+    	String[] comment = mListDataSet.get(info.position).get("comment").split(" ");
+    	final String cardId = comment[0];
+    	SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(this);
+    	SQLiteDatabase db = helper.getReadableDatabase();
+    	Cursor c = db.query("card", new String[]{"name"}, "card_id like ?", new String[]{cardId}, null, null, null, "1");
+    	int indexName = c.getColumnIndex("name");
+    	c.moveToFirst();
+    	String name = c.getString(indexName);
+    	c.close();
+    	db.close();
+
+    	
         switch(item.getItemId()){
       //削除
         case END_CODE:
         	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        	builder.setTitle("カード" + (info.position + 1) + "を削除していいですか？");
+        	builder.setTitle(name + " を削除していいですか？");
         	DialogInterface.OnClickListener doc = new DialogInterface.OnClickListener() {
 				private AdapterContextMenuInfo info;
 				public DialogInterface.OnClickListener setParam(AdapterContextMenuInfo i) {
@@ -272,6 +303,34 @@ public class ICListActivity extends ListActivity {
 			});
         	builder.create().show();
           return true;
+        case MODIFY_CODE:
+        	AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
+        	final EditText editText = new EditText(this);
+        	editText.setText(name);
+        	builder2.setTitle("カード名称の編集");
+        	builder2.setView(editText);
+        	builder2.setPositiveButton("OK", new OnClickListener() {
+				
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(ICListActivity.this);
+					SQLiteDatabase db = helper.getWritableDatabase();
+					ContentValues val = new ContentValues();
+					val.put("name", editText.getText().toString());
+					db.update("card", val, "card_id like ?", new String[]{cardId});
+					db.close();
+					helper.close();
+					setListDataSet();
+				}
+			});
+			builder2.setNegativeButton("やめる", new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+				}
+			});
+			builder2.create().show();
+
+        	return true;
         default:
           return super.onContextItemSelected(item);
         }
