@@ -456,7 +456,12 @@ public class HistoryDataBase {
 		        		String processType, Date processDate, String[] entranceStation,
 		        		String[] exitStation, long balance, int historyNo) {
 */
-				bw.write("# LOG BACKUP");
+				bw.write(LOG_HEADER);
+				bw.write("\t");
+				bw.write(LOG_VERSION);
+				bw.write("\t");
+				bw.write((new SimpleDateFormat(DATE_PATTERN)).format(new Date()));
+				mLastWrite = (new SimpleDateFormat(DATE_PATTERN)).format(new Date());
 				bw.write("\n");
 				
 				for (History singleWriteLog : mData) {
@@ -483,6 +488,67 @@ public class HistoryDataBase {
 
 	      		 
 	      		 
+        	}
+        	public void loadFromBackup(String src) throws IOException {
+        		BufferedReader br = null;
+        		ArrayList<History> history = new ArrayList<History>();
+        		try {
+    				FileInputStream fis =  new FileInputStream(src);
+
+        			
+        			br = new BufferedReader(new InputStreamReader(fis));
+        			int readCount = 0;
+        			while (br.ready()) {
+        				String line = br.readLine();
+        				if (readCount++ == 0) {
+        					if (line.startsWith(LOG_HEADER)) {
+        						//LOG_VERSION > 2
+        						String[] header = line.split("\t");
+        						mLastWrite = header[2];
+        						continue;
+        					} else {
+        						continue;
+//        						return readHistoryFromFile_v1();
+        					}
+        				}
+        				String[] columns = line.split("\t");
+        				if(columns.length != 9) {
+        					continue;
+        				}
+        				for (int i = 0; i < columns.length; i++) {
+        					columns[i] = columns[i].substring(1, columns[i].length()-1);
+        				}
+        				try {
+							history.add(new History(
+									Util.convertToByte(columns[0]),
+									columns[1], columns[2],
+									(new SimpleDateFormat(DATE_PATTERN)).parse(columns[3]),
+									columns[4].split(":"),
+									columns[5].split(":"),
+									Long.valueOf(columns[6]),
+									Integer.valueOf(columns[7]),
+									columns[8],
+									mContext
+									));
+						} catch (ParseException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+        			}
+        			br.close();
+        			fis.close();
+        			for (int i = 0; i < history.size() - 1; i++) {
+        				history.get(i).fee = (int)(history.get(i).balance - history.get(i + 1).balance);
+        			}
+    			} catch (FileNotFoundException e) {
+
+    			} catch (IOException e) {
+    				// TODO Auto-generated catch block
+    				e.printStackTrace();
+    			}
+        		mData = history;
+
+
         	}
     	}
     	public static String join(String[] tokens, char delimiter) {
