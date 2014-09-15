@@ -108,7 +108,7 @@ public class SuicaLogViewActivity extends Activity {
 	private HistoryDataBase mDb;
 	private SharedPreferences sharedPref;
 	private AdView adView;
-	static final String MY_AD_UNIT_ID = "a151adc8d9b0c47";
+	static final String MY_AD_UNIT_ID = "ca-app-pub-1661412607542997/2649568063";
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
