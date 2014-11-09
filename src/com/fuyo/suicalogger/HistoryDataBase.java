@@ -116,11 +116,10 @@ public class HistoryDataBase {
     		public String getLastWrite() {
     			return mLastWrite;
     		}
-    		private ArrayList<History> readHistoryFromFile_v1() {
+    		private ArrayList<History> readHistoryFromFile_v1(FileInputStream fis) {
 
         		ArrayList<History> history = new ArrayList<History>();
         		try {
-        			FileInputStream fis = mContext.openFileInput(mFilename);
     				BufferedInputStream bis = new BufferedInputStream(fis);
     				byte[] buffer = new byte[MAX_LOG];
     				int readCount = bis.read(buffer,0,MAX_LOG);
@@ -182,12 +181,11 @@ public class HistoryDataBase {
     			
     		}
 */
-    		private ArrayList<History> readHistoryFromFile_v2() {
+    		private ArrayList<History> readHistoryFromFile_v2(FileInputStream fis) {
         		BufferedReader br = null;
         		ArrayList<History> history = new ArrayList<History>();
         		try {
-        			FileInputStream fis = mContext.openFileInput(mFilename);
-        			
+
         			br = new BufferedReader(new InputStreamReader(fis));
         			int readCount = 0;
         			while (br.ready()) {
@@ -199,7 +197,7 @@ public class HistoryDataBase {
         						mLastWrite = header[2];
         						continue;
         					} else {
-        						return readHistoryFromFile_v1();
+        						return readHistoryFromFile_v1(fis);
         					}
         				}
         				String[] columns = line.split("\t");
@@ -224,7 +222,6 @@ public class HistoryDataBase {
 						}
         			}
         			br.close();
-        			fis.close();
     			} catch (FileNotFoundException e) {
     				e.printStackTrace();
 
@@ -235,12 +232,11 @@ public class HistoryDataBase {
         		return history;
     			
     		}
-    		private ArrayList<History> readHistoryFromFile_v3() {
+    		private ArrayList<History> readHistoryFromFile_v3(FileInputStream fis) {
         		BufferedReader br = null;
         		ArrayList<History> history = new ArrayList<History>();
         		try {
-        			FileInputStream fis = mContext.openFileInput(mFilename);
-        			
+
         			br = new BufferedReader(new InputStreamReader(fis));
         			int readCount = 0;
         			while (br.ready()) {
@@ -252,7 +248,7 @@ public class HistoryDataBase {
         						mLastWrite = header[2];
         						continue;
         					} else {
-        						return readHistoryFromFile_v1();
+        						return readHistoryFromFile_v1(fis);
         					}
         				}
         				String[] columns = line.split("\t");
@@ -280,7 +276,6 @@ public class HistoryDataBase {
 						}
         			}
         			br.close();
-        			fis.close();
         			for (int i = 0; i < history.size() - 1; i++) {
         				history.get(i).fee = (int)(history.get(i).balance - history.get(i + 1).balance);
         			}
@@ -309,7 +304,7 @@ public class HistoryDataBase {
 	            		BufferedReader br = null;
 	            		int version = 1;
 	        			FileInputStream fis = mContext.openFileInput(mFilename);
-	        			
+
 	        			br = new BufferedReader(new InputStreamReader(fis));
 	        			int readCount = 0;
 	       				String line = br.readLine();
@@ -322,15 +317,17 @@ public class HistoryDataBase {
 	       				}
 	        			br.close();
 	        			fis.close();
-	        			
+
+                        fis = mContext.openFileInput(mFilename);
 	        			ArrayList<History> history = new ArrayList<History>();
 	        			if (version == 1) {
-	        				history = readHistoryFromFile_v1();
+	        				history = readHistoryFromFile_v1(fis);
 	        			} else if (version == 2) {
-	        				history = readHistoryFromFile_v2();
+	        				history = readHistoryFromFile_v2(fis);
 	        			} else if (version == 3) { 
-	        				history = readHistoryFromFile_v3();
+	        				history = readHistoryFromFile_v3(fis);
 	        			}
+                        fis.close();
 	        			writeHistory(history);
 	        			return history;
 	    			} catch (FileNotFoundException e) {
@@ -490,66 +487,42 @@ public class HistoryDataBase {
 	      		 
         	}
         	public void loadFromBackup(String src) throws IOException {
-        		BufferedReader br = null;
-        		ArrayList<History> history = new ArrayList<History>();
-        		try {
-    				FileInputStream fis =  new FileInputStream(src);
-
-        			
-        			br = new BufferedReader(new InputStreamReader(fis));
-        			int readCount = 0;
-        			while (br.ready()) {
-        				String line = br.readLine();
-        				if (readCount++ == 0) {
-        					if (line.startsWith(LOG_HEADER)) {
-        						//LOG_VERSION > 2
-        						String[] header = line.split("\t");
-        						mLastWrite = header[2];
-        						continue;
-        					} else {
-        						continue;
-//        						return readHistoryFromFile_v1();
-        					}
-        				}
-        				String[] columns = line.split("\t");
-        				if(columns.length != 9) {
-        					continue;
-        				}
-        				for (int i = 0; i < columns.length; i++) {
-        					columns[i] = columns[i].substring(1, columns[i].length()-1);
-        				}
-        				try {
-							history.add(new History(
-									Util.convertToByte(columns[0]),
-									columns[1], columns[2],
-									(new SimpleDateFormat(DATE_PATTERN)).parse(columns[3]),
-									columns[4].split(":"),
-									columns[5].split(":"),
-									Long.valueOf(columns[6]),
-									Integer.valueOf(columns[7]),
-									columns[8],
-									mContext
-									));
-						} catch (ParseException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-        			}
-        			br.close();
-        			fis.close();
-        			for (int i = 0; i < history.size() - 1; i++) {
-        				history.get(i).fee = (int)(history.get(i).balance - history.get(i + 1).balance);
-        			}
-    			} catch (FileNotFoundException e) {
-
-    			} catch (IOException e) {
-    				// TODO Auto-generated catch block
-    				e.printStackTrace();
-    			}
-        		mData = history;
+                try {
 
 
-        	}
+                    BufferedReader br = null;
+                    int version = 1;
+                    FileInputStream fis = new FileInputStream(src);
+
+                    br = new BufferedReader(new InputStreamReader(fis));
+                    int readCount = 0;
+                    String line = br.readLine();
+                    if (readCount++ == 0) {
+                        if (line.startsWith(LOG_HEADER)) {
+                            //LOG_VERSION > 2
+                            String[] header = line.split("\t");
+                            version = Integer.parseInt(header[1]);
+                        }
+                    }
+                    br.close();
+                    fis.close();
+
+                    fis = mContext.openFileInput(src);
+
+                    ArrayList<History> history = new ArrayList<History>();
+                    if (version == 1) {
+                        history = readHistoryFromFile_v1(fis);
+                    } else if (version == 2) {
+                        history = readHistoryFromFile_v2(fis);
+                    } else if (version == 3) {
+                        history = readHistoryFromFile_v3(fis);
+                    }
+                    writeHistory(history);
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
     	}
     	public static String join(String[] tokens, char delimiter) {
     	    if (tokens == null) {
