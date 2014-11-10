@@ -523,7 +523,7 @@ public class SuicaLogViewActivity extends Activity {
     	SQLiteDatabase db = helper.getReadableDatabase();
     	Cursor cursor = null;
     	try {
-    		cursor = db.query("history", new String[]{"note"}, "raw like ?",
+    		cursor = db.query("history", new String[]{"distinct note"}, "raw like ?",
     				new String[]{rawString.substring(0,2)+"______________"+rawString.substring(16,20)+"%"}, null, null, "history_no desc");
     		int indexNote = cursor.getColumnIndex("note");
     		while (cursor.moveToNext()) {

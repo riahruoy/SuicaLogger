@@ -21,6 +21,7 @@ import com.fuyo.suicalogger.Util;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.nfc.Tag;
 import android.nfc.tech.NfcF;
 import android.os.Environment;
@@ -132,7 +133,7 @@ public class Suica {
             this.exitStation = lookupExitStation();
             this.balance = lookupBalance();
             this.historyNo = lookupHistoryNo();
-            this.note = "";
+            this.note = lookupNote();
             this.fee = 0;
         }
         public void reLookupStation() {
@@ -349,6 +350,27 @@ public class Suica {
             return ( this.data[1] & 0xff) == 0x02;
         }
 
+        private String lookupNote() {
+            String rawString = Util.getHexString(this.data);
+            SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(context);
+            SQLiteDatabase db = helper.getReadableDatabase();
+            Cursor cursor = null;
+            try {
+                cursor = db.query("history", new String[]{"distinct note"}, "raw like ?",
+                        new String[]{rawString.substring(0,2)+"______________"+rawString.substring(16,20)+"%"}, null, null, "history_no desc");
+                int indexNote = cursor.getColumnIndex("note");
+                while (cursor.moveToNext()) {
+                    String str = cursor.getString(indexNote);
+                    if (str.length() > 0) {
+                        return str;
+                    }
+                }
+            } finally {
+                cursor.close();
+            }
+            db.close();
+            return "";
+        }
         /* (non-Javadoc)
          * @see java.lang.Object#toString()
          */
