@@ -106,9 +106,9 @@ public class Suica {
         final String processType;
         final long balance;
         final Date processDate;
-        String[] entranceStation;
-        String[] exitStation;
-        int fee;
+        public String[] entranceStation;
+        public String[] exitStation;
+        public int fee;
         public String note;
         
         
@@ -267,14 +267,6 @@ public class Suica {
         public String[] getExitStation() {
         	return this.exitStation;
         }
-        /**
-         *  地区コード、線区コード、駅順コードから駅名を取得します
-         * <pre>http://sourceforge.jp/projects/felicalib/wiki/suicaを参考にしています</pre>
-         * @param regionCode 地区コードをセット
-         * @param lineCode 線区コードをセット
-         * @param statioCode 駅順コードをセット
-         * @return 取得できた場合、序数0に会社名、1に路線名、2に駅名が戻ります
-         */
         private String[] getStation(byte rc, byte lc, byte sc) {
         	int regionCode = (rc & 0xff);
         	int lineCode = (lc & 0xff);

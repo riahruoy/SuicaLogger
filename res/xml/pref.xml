@@ -17,6 +17,14 @@
             android:title="Suicaデータ解析に貢献する"
             android:summary="メモに手動で入力した場合にメモ内容とSuica決済店舗のIDが送信されます。これにより将来的には決済店舗を自動で表示する機能がつけれればよいと思っています。" 
         />
+        <PreferenceScreen
+            android:key="key_import"
+            android:title="インポート"
+            android:summary="/sdcard/suicalogger/import/ にあるファイルをインポートします。データは上書きされます。"
+        />
+
+
+
     </PreferenceCategory>
     
 </PreferenceScreen>

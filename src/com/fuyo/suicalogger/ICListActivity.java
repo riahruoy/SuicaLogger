@@ -36,6 +36,7 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -52,6 +53,9 @@ public class ICListActivity extends ListActivity {
 	private IntentFilter[] mFilters;
 	private final static int END_CODE = 1;
 	private final static int MODIFY_CODE = 2;
+    private final static int MENU_ID_MENU1 = Menu.FIRST;
+    private final static int MENU_ID_MENU2 = MENU_ID_MENU1 + 1;
+    private final static int MENU_ID_MENU3 = MENU_ID_MENU2 + 1;
 	String[][] mTechLists;
 	private ListView mListView;
 	private List<Map<String, String>> mListDataSet;
@@ -136,7 +140,7 @@ public class ICListActivity extends ListActivity {
     @Override
     public void onResume() {
     	mAdapter.enableForegroundDispatch(this, mPendingIntent, mFilters, mTechLists);
-    	mDb.reloadLogFile();  //in case that new suica was loaded at another activity
+        setListDataSet();
     	mSimpleAdapter.notifyDataSetChanged();
     	mListView.invalidateViews();
     	super.onResume();
@@ -335,4 +339,48 @@ public class ICListActivity extends ListActivity {
           return super.onContextItemSelected(item);
         }
       }
+    // オプションメニューが最初に呼び出される時に1度だけ呼び出されます
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // メニューアイテムを追加します
+        menu.add(Menu.NONE, MENU_ID_MENU1, Menu.NONE, "設定");
+
+//    	menu.add(Menu.NONE, MENU_ID_MENU2, Menu.NONE, "データベース更新");
+//    	menu.add(Menu.NONE, MENU_ID_MENU3, Menu.NONE, "recalc fee");
+//        menu.add(Menu.NONE, Menu.FIRST+1, Menu.NONE, "キャッシュ再構築");
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    // オプションメニューが表示される度に呼び出されます
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+//        menu.findItem(MENU_ID_MENU1).setVisible(true);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    // オプションメニューアイテムが選択された時に呼び出されます
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        boolean ret = true;
+        switch (item.getItemId()) {
+            case MENU_ID_MENU1:
+                Intent intent = new Intent(this, PrefActivity.class);
+                startActivity(intent);
+                break;
+            case MENU_ID_MENU2:
+                DBUtil util = new DBUtil(this);
+                try {
+                    util.copyDataBase();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                util.close();
+                break;
+            default:
+                ret = super.onOptionsItemSelected(item);
+                break;
+        }
+        return ret;
+    }
 }

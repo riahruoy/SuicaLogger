@@ -13,6 +13,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 public class SuicaHistoryDB {
 	static public final String DATE_PATTERN ="yyyy-MM-dd'T'HH:mm:ss";
@@ -129,7 +130,7 @@ public class SuicaHistoryDB {
 		for (int i = 0; i < histories.size(); i++) {
 			History history = histories.get(i);
 			String raw = Util.convertToString(history.data);
-			Cursor cursor = db.query("history", new String[]{"id"}, "raw=? and card_id=?", new String[]{raw, cardId}, null, null, null, "1");
+			Cursor cursor = db.query("history", new String[]{"id"}, "raw=?", new String[]{raw}, null, null, null, "1");
 			int count = cursor.getCount();
 			cursor.close();
 			if (count == 0) {
@@ -153,6 +154,7 @@ public class SuicaHistoryDB {
 				lastBalance = (int) history.balance;
 			}
 		}
+        Log.d("add", "" + writeCount + " data is added");
 		return writeCount;
 	}
 	

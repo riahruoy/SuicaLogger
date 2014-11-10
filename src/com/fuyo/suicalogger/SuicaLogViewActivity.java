@@ -207,6 +207,8 @@ public class SuicaLogViewActivity extends Activity {
     @Override
     public void onResume() {
     	mAdapter.enableForegroundDispatch(this, mPendingIntent, mFilters, mTechLists);
+        mSuicaLogAdapter.notifyDataSetChanged();
+        mListView.invalidateViews();
     	super.onResume();
     }
     

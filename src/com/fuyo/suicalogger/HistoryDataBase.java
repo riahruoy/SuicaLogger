@@ -99,6 +99,18 @@ public class HistoryDataBase {
     		}
     		return mDataMap.get(id).writeHistory(data);
     	}
+    public void loadFromBackup (String id, String path) {
+        if (!mDataMap.containsKey(id)) {
+            CardHistoryFile hf = new CardHistoryFile(id);
+            mCurrentCardHistory = hf;
+            mDataMap.put(id, hf);
+        }
+        try {
+            mDataMap.get(id).loadFromBackup(path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     	public Map<String, CardHistoryFile> getICs() {
     		return mDataMap;
     	}
@@ -288,6 +300,65 @@ public class HistoryDataBase {
         		return history;
     			
     		}
+            private ArrayList<History> readHistoryFromFile_v4(FileInputStream fis) {
+                BufferedReader br = null;
+                ArrayList<History> history = new ArrayList<History>();
+                try {
+
+                    br = new BufferedReader(new InputStreamReader(fis));
+                    int readCount = 0;
+                    while (br.ready()) {
+                        String line = br.readLine();
+                        if (readCount++ == 0) {
+                            if (line.startsWith(LOG_HEADER)) {
+                                //LOG_VERSION > 2
+                                String[] header = line.split("\t");
+                                mLastWrite = header[2];
+                                continue;
+                            } else {
+                                return readHistoryFromFile_v1(fis);
+                            }
+                        }
+                        String[] columns = line.split("\t");
+                        if(columns.length != 10) {
+                            continue;
+                        }
+                        for (int i = 0; i < columns.length; i++) {
+                            columns[i] = columns[i].substring(1, columns[i].length()-1);
+                        }
+                        try {
+                            History h = new History(
+                                    Util.convertToByte(columns[0]),
+                                    columns[1], columns[2],
+                                    (new SimpleDateFormat(DATE_PATTERN)).parse(columns[3]),
+                                    columns[4].split(":"),
+                                    columns[5].split(":"),
+                                    Long.valueOf(columns[6]),
+                                    Integer.valueOf(columns[7]),
+                                    columns[8],
+                                    mContext
+                            );
+                            h.fee = Integer.valueOf(columns[9]);
+
+                            history.add(h);
+                        } catch (ParseException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    br.close();
+                    for (int i = 0; i < history.size() - 1; i++) {
+                        history.get(i).fee = (int)(history.get(i).balance - history.get(i + 1).balance);
+                    }
+                } catch (FileNotFoundException e) {
+
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                return history;
+
+            }
     		private ArrayList<History> readHistoryFromSQL() {
         		SQLiteOpenHelper helper = new SuicaHistoryDB.OpenHelper(mContext);
         		SQLiteDatabase db = helper.getReadableDatabase();
@@ -326,7 +397,9 @@ public class HistoryDataBase {
 	        				history = readHistoryFromFile_v2(fis);
 	        			} else if (version == 3) { 
 	        				history = readHistoryFromFile_v3(fis);
-	        			}
+	        			} else if (version == 4) {
+                            history = readHistoryFromFile_v4(fis);
+                        }
                         fis.close();
 	        			writeHistory(history);
 	        			return history;
@@ -497,6 +570,7 @@ public class HistoryDataBase {
                     br = new BufferedReader(new InputStreamReader(fis));
                     int readCount = 0;
                     String line = br.readLine();
+
                     if (readCount++ == 0) {
                         if (line.startsWith(LOG_HEADER)) {
                             //LOG_VERSION > 2
@@ -507,7 +581,7 @@ public class HistoryDataBase {
                     br.close();
                     fis.close();
 
-                    fis = mContext.openFileInput(src);
+                    fis = new FileInputStream(src);
 
                     ArrayList<History> history = new ArrayList<History>();
                     if (version == 1) {
@@ -516,6 +590,8 @@ public class HistoryDataBase {
                         history = readHistoryFromFile_v2(fis);
                     } else if (version == 3) {
                         history = readHistoryFromFile_v3(fis);
+                    } else if (version == 4) {
+                        history = readHistoryFromFile_v4(fis);
                     }
                     writeHistory(history);
                     fis.close();
