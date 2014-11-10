@@ -635,7 +635,11 @@ public class SuicaLogViewActivity extends Activity {
 				TextView tv2 = (TextView)convertView.findViewById(R.id.textView_daysum);
 				SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd (E)");
 				History nextHistory = mDataSetWithSeparator.get(position+1);
-				tv.setText(sdf.format(nextHistory.getProcessDate()));
+                if (position == 0) {
+                    tv.setText(sdf.format(nextHistory.getProcessDate()) + " 残額: " + nf.format(nextHistory.balance));
+                } else {
+                    tv.setText(sdf.format(nextHistory.getProcessDate()));
+                }
 				long[] use = getUseOfDay(position);
 				tv2.setText("利用:" + nf.format(use[0]) + "  チャージ:" + nf.format(use[1]));
 			} else {
