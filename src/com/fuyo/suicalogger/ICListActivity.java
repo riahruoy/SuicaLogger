@@ -97,6 +97,7 @@ public class ICListActivity extends ListActivity {
 			
 		});
         registerForContextMenu(mListView);
+        setListDataSet();
         if (mListDataSet.size() == 1) {
         	String[] tmp = mListDataSet.get(0).get("comment").split(" ");
 			String cardId = tmp[0];
@@ -129,7 +130,6 @@ public class ICListActivity extends ListActivity {
 	        	}
 	        }
         }
-    	setListDataSet();
 
     }
 	private void createIntent(String cardId) {

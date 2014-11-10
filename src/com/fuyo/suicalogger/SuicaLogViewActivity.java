@@ -323,6 +323,10 @@ public class SuicaLogViewActivity extends Activity {
 	    	    	mListView.invalidateViews();
 				    dialog.dismiss();
 	    			Toast.makeText(SuicaLogViewActivity.this, "履歴を" + String.valueOf(result)+"件追加しました", Toast.LENGTH_SHORT).show();
+                    finish();
+                    Intent intent = new Intent(SuicaLogViewActivity.this, SuicaLogViewActivity.class);
+                    intent.putExtra("cardId", cardId);
+                    startActivity(intent);
 				}
     		};
     		task.execute(intent);
